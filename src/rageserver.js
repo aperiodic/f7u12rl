@@ -45,6 +45,15 @@ var sendPNG = function (res, imageData) {
 }
 
 
+var sendNoFaces = function(res) {
+  res.writeHead(200, NO_FACES_MSG, { 'Content-Type': 'text/plain'
+                                   , 'Content-Length': NO_FACES_MSG.length
+                                   });
+  res.write(NO_FACES_MSG);
+  res.end();
+}
+
+
 
 /*** SERVER LOGIC *************************************************************/
 
@@ -83,7 +92,7 @@ var gotImage = function (res, src, err, data) {
   if (err) { cryMeARiver(err); return }
   
   if (data === NO_FACES_SYM) {
-    sendNoFaceError(res);
+    sendNoFaces(res);
     return;
   }
   
@@ -112,7 +121,7 @@ var gotRage = function(res, src, err, data, info) {
   }
   
   if (!data) {
-    sendNoFaceError(res);
+    sendNoFaces(res);
     Image.save(src, NO_FACES_SYM);
     return;
   }
@@ -122,23 +131,14 @@ var gotRage = function(res, src, err, data, info) {
 }
 
 
-var sendNoFaceError = function(res) {
-  res.writeHead(404, NO_FACES_MSG, { 'Content-Type': 'text/plain'
-                                   , 'Content-Length': NO_FACES_MSG.length
-                                   });
-  res.write(NO_FACES_MSG);
-  res.end();
-}
 
+/*** MAIN *********************************************************************/
 
 process.on('uncaughtException', function (err) {
   console.log('Caught uncaught exception: ' + err);
   console.log(err.stack);
 });
 
-
-
-/*** MAIN *********************************************************************/
 
 rc = redis.createClient();
 Image.configure(rc);
