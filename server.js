@@ -26,6 +26,7 @@ var REDIS_SYM_LENGTH_CEIL = 100;
 // This is safe to use when pairing integers and face.com API error messages, 
 // since neither of those things will contain a pipe.
 var FACE_COM_SAFE_DELIMITER = '|';
+var FACE_COM_ERR_CACHE_TTL = 3600;
 
 
 /*** GLOBALS ******************************************************************/
@@ -132,6 +133,7 @@ var gotRage = function(res, src, err, data, info) {
     if (err.code) {
       sendErr(res, err.code, err.message);
       Cache.save(src, err.code + FACE_COM_SAFE_DELIMITER + err.message);
+      Cache.expire(src, FACE_COM_ERR_CACHE_TTL);
     } else {
       console.error(err);
       console.error(err.stack);
