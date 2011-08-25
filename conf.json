@@ -1,0 +1,12 @@
+{ "face_com": { "api_key":    "22cbdae7628d96de0819acae4be65635"
+              , "api_secret": "1d5f0083b79073786b615eba16ae8155"
+              }
+              
+, "server": { "port":     24712
+            , "hostname": "0.0.0.0"
+            }
+            
+, "redis":  { "host": "localhost"
+            , "port": 6379
+            }
+}

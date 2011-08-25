@@ -3,10 +3,12 @@
 
 /*** MODULES ******************************************************************/
 
+var fs = require('fs');
 var http = require('http');
 var url = require('url');
 
 var curry = require('curry');
+var flags = require('flags');
 var jade = require('jade');
 var redis = require('redis');
 
@@ -186,7 +188,14 @@ process.on('uncaughtException', function (err) {
   console.log(err.stack);
 });
 
+flags.defineString('conf', 'conf.json', 'Configuration file');
+flags.parse();
+var confPath = flags.get('conf');
+var confText = fs.readFileSync(confPath, 'utf8');
+var conf = JSON.parse(confText);
 
-rc = redis.createClient();
+rc = redis.createClient(conf.redis.port, conf.redis.host);
 Cache.configure(rc);
-http.createServer(handleRootReq).listen(24712, '0.0.0.0');
+enrage.configure(conf.face_com.api_key, conf.face_com.api_secret);
+
+http.createServer(handleRootReq).listen(conf.server.port, conf.server.hostname);
