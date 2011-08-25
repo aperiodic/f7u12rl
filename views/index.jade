@@ -1,0 +1,80 @@
+!!! html
+html
+  head
+    title FFFFFFFUUUUUUUUUUUU
+    style
+      body { 
+        font-family: Garamond, Georgia, serif;
+        font-style: bold;
+        font-size: 28px;
+      }
+      input { font-size: 20px; }
+      #wrapper { margin-top: 1em; }
+      #label { margin-left: 0.05em; }
+      #enrage {
+        border: 2px solid black;
+        background-color: #c2c2c2;
+        margin-left: 0.5em;
+        padding: 2px;
+        
+      }
+      #enrage:hover {
+        border: 4px solid red;
+        cursor: pointer;
+        padding: 0px;
+      }
+      #msgs {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 2em;
+      }
+      .hidden { display: none }
+      .error { color: #91100a }
+
+
+    script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js')
+    script
+      var oops = function(xhr, textStatus) {
+        $('#msgs').empty();
+        $('#msgs').append('<span class="error">SERVER SAYS: ' +
+                          xhr.responseText.replace(/_/g, ' ') + '</span>');
+        $('#msgs').append('<br>You must enter the URL of the image ' +
+                          '(it should end in .jpg or .png)');
+        $('#msgs').removeClass('hidden');
+      }
+
+      var huzzah = function(resp) {
+        if (resp === 'No faces found') {
+          $('#msgs').empty();
+          $('#msgs').append('SERVER SAYS: NO FACES FOUND');
+          $('#msgs').removeClass('hidden');
+        } else {
+          $('#msgs').addClass('hidden');
+          $('#image').slideDown(200);
+        }
+      }
+      
+      $(document).ready(function () {
+        $('form').submit(function () {
+          var imgUrl = $('#srcInput').val();
+          $('#image').slideUp(200, function() {
+            $('#img').attr('src', '/?src=' + imgUrl);
+          });
+          $.ajax({ url:  '/'
+                 , data:    {src: imgUrl}
+                 , error:   oops
+                 , success: huzzah
+                 });
+          return false;
+        });
+      });
+      
+  body
+    #image
+      img#img(src='/?src=#{image}')
+    #wrapper
+      #msgs
+      #label FFFFFFFUUUUUUUUUUURL:
+      form
+        input#srcInput(type='text', size=60, placeholder=image)
+        input#enrage(type='submit', value='&nbsp;ENRAGE&nbsp;')

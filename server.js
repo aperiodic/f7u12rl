@@ -7,6 +7,7 @@ var http = require('http');
 var url = require('url');
 
 var curry = require('curry');
+var jade = require('jade');
 var redis = require('redis');
 
 var enrage = require(__dirname + '/lib/enrage.js');
@@ -15,18 +16,25 @@ var Cache = require(__dirname + '/lib/cache.js');
 
 /*** RUNTIME #DEFINES *********************************************************/
 
-var NO_SRC_ERR_MSG = 'No "src" parameter found';
-var NO_FACES_MSG = 'No faces found'
-var I_DONE_GOOFED = 'I done goofed';
+var I_DONE_GOOFED = 'I DONE GOOFED (ERROR 500)';
 
+var NO_FACES_MSG = 'No faces found'
 var NO_FACES_SYM = 'nofaces';
+
+// If a cached value from redis has a length longer than this, we assume it's a
+// base64-encoded PNG image; otherwise, we assume it's a special symbol denoting
+// that, e.g., there are no faces in the image, or Face.com couldn't get a valid
+// image. If any of these symbols exceed this length ceiling, bad things will
+// happen.
 var REDIS_SYM_LENGTH_CEIL = 100;
 
+var QUEEN_ELIZABETH = 'http://www.librarising.com/astrology/celebs/images2' +
+                      '/QR/queenelizabethii.jpg';
 
 // This is safe to use when pairing integers and face.com API error messages, 
-// since neither of those things will contain a pipe.
+// since neither of these things will contain a pipe.
 var FACE_COM_SAFE_DELIMITER = '|';
-var FACE_COM_ERR_CACHE_TTL = 3600;
+var FACE_COM_ERR_CACHE_TTL = 600;
 
 
 /*** GLOBALS ******************************************************************/
@@ -43,6 +51,7 @@ var cryMeARiver = function (err) {
   console.error(err.stack);
 }
 
+
 var sendPNG = function (res, imageData) {
   res.writeHead(200, { 'Content-Type': 'image/png'
                      , 'Content-Length': imageData.length
@@ -51,15 +60,29 @@ var sendPNG = function (res, imageData) {
   res.end();
 }
 
-
-var sendNoFaces = function(res) {
-  res.writeHead(200, NO_FACES_MSG, { 'Content-Type': 'text/plain'
-                                   , 'Content-Length': NO_FACES_MSG.length
-                                   });
-  res.write(NO_FACES_MSG);
+var sendHTML = function (res, err, html) {
+  if (err) {
+    cryMeARiver(err);
+    send500(res);
+    return;
+  }
+  
+  // make a buffer so we know the byte length
+  var htmlData = new Buffer(html, 'utf8');
+  res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8'
+                     , 'Content-Length': html.length
+                     });
+  res.write(html);
   res.end();
 }
 
+var sendNoFaces = function(res) {
+  res.writeHead(200, { 'Content-Type': 'text/plain'
+                     , 'Content-Length': NO_FACES_MSG.length
+                     });
+  res.write(NO_FACES_MSG);
+  res.end();
+}
 
 var sendErr = function(res, errCode, errMsg) {
   res.writeHead(errCode, errMsg, { 'Content-Type': 'text/plain'
@@ -82,7 +105,9 @@ var handleRootReq = function (req, res) {
   var src = request.query.src;
   
   if (!src) {
-    sendErr(res, 400, NO_SRC_ERR_MSG);
+    jade.renderFile('views/index.jade', 
+                    { locals: { image: QUEEN_ELIZABETH }}, 
+                    curry([res], sendHTML));
     return;
   }
   
