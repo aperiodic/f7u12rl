@@ -82,16 +82,20 @@ html
       }
       
       $(document).ready(function () {
-        var imgUrl = window.atob(document.location.pathname.replace('/', ''));
-        checkStatus(imgUrl);
+        if (document.location.pathname.length > 1) {
+          var imgUrl = window.atob(document.location.pathname.replace('/', ''));
+          checkStatus(imgUrl);
+        }
  
         if (Modernizr.history) {
           window.addEventListener('popstate', function (e) {
-            var imgUrl = window.atob(document.location.pathname.replace('/', ''));
-            $('#image').slideUp(200, function() {
-              $('#img').attr('src', '/?src=' + imgUrl);
-            })
-            checkStatus(imgUrl);
+            if (document.location.pathname.length > 1) {
+              var imgUrl = window.atob(document.location.pathname.replace('/', ''));
+              $('#image').slideUp(200, function() {
+                $('#img').attr('src', '/?src=' + imgUrl);
+              })
+              checkStatus(imgUrl);
+            }
           })
         }
       
