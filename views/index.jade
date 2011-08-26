@@ -1,7 +1,7 @@
 !!! html
 html
   head
-    title FFFFFFFUUUUUUUUUUUU
+    title f7u12rl
     style
       body { 
         font-family: Garamond, Georgia, serif;
@@ -23,9 +23,11 @@ html
         cursor: pointer;
         padding: 0px;
       }
-      #msgs {
+      #holdon, #msgs {
         font-size: 18px;
         font-weight: bold;
+      }
+      #msgs {
         margin-bottom: 2em;
       }
       .hidden { display: none }
@@ -34,6 +36,23 @@ html
 
     script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js')
     script
+      /* Modernizr 2.0.6 (Custom Build) | MIT & BSD
+       * http://www.modernizr.com/
+       * Contains: history
+       */
+      ;window.Modernizr=function(a,b,c){function w(a,b){return!!~(""+a).indexOf(
+      b)}function v(a,b){return typeof a===b}function u(a,b){return t(
+      prefixes.join(a+";")+(b||""))}function t(a){j.cssText=a}var d="2.0.6",e={}
+      ,f=b.documentElement,g=b.head||b.getElementsByTagName("head")[0],h=
+      "modernizr",i=b.createElement(h),j=i.style,k,l=Object.prototype.toString,
+      m={},n={},o={},p=[],q,r={}.hasOwnProperty,s;!v(r,c)&&!v(r.call,c)?s=
+      function(a,b){return r.call(a,b)}:s=function(a,b){return b in a&&v(a
+      .constructor.prototype[b],c)},m.history=function(){return!!a.history&&
+      !!history.pushState};for(var x in m)s(m,x)&&(q=x.toLowerCase(),e[q]=m[x]()
+      ,p.push((e[q]?"":"no-")+q));t(""),i=k=null,e._version=d;return e}(this,
+      this.document);
+    script
+ 
       var oops = function(xhr, textStatus) {
         $('#msgs').empty();
         $('#msgs').append('<span class="error">SERVER SAYS: ' +
@@ -53,28 +72,51 @@ html
           $('#image').slideDown(200);
         }
       }
+
+      var checkStatus = function (imgUrl) {
+        $.ajax({ url:  '/'
+               , data:     {src: imgUrl}
+               , error:    oops
+               , success:  huzzah
+               })
+      }
       
       $(document).ready(function () {
-        $('form').submit(function () {
+        var imgUrl = window.atob(document.location.pathname.replace('/', ''));
+        checkStatus(imgUrl);
+ 
+        if (Modernizr.history) {
+          window.addEventListener('popstate', function (e) {
+            var imgUrl = window.atob(document.location.pathname.replace('/', ''));
+            $('#image').slideUp(200, function() {
+              $('#img').attr('src', '/?src=' + imgUrl);
+            })
+            checkStatus(imgUrl);
+          })
+        }
+      
+        $('form').attr('action', undefined);
+        $('form').submit(function (e) {
           var imgUrl = $('#srcInput').val();
           $('#image').slideUp(200, function() {
             $('#img').attr('src', '/?src=' + imgUrl);
-          });
-          $.ajax({ url:  '/'
-                 , data:    {src: imgUrl}
-                 , error:   oops
-                 , success: huzzah
-                 });
+            if (Modernizr.history) {
+              history.pushState(null, null, '/' + window.btoa(imgUrl));
+            }
+          })
+          checkStatus(imgUrl);
+          e.preventDefault();
           return false;
-        });
-      });
+        })
+      })
       
   body
     #image
       img#img(src='/?src=#{image}')
+    #holdon
     #wrapper
       #msgs
       #label FFFFFFFUUUUUUUUUUURL:
-      form
-        input#srcInput(type='text', size=60, placeholder=image)
+      form(action='/')
+        input#srcInput(type='text', name='src', size=60, placeholder=image)
         input#enrage(type='submit', value='&nbsp;ENRAGE&nbsp;')

@@ -1,7 +1,12 @@
 { "face_com": { "api_key":    "22cbdae7628d96de0819acae4be65635"
               , "api_secret": "1d5f0083b79073786b615eba16ae8155"
               }
-              
+             
+, "log": { "exceptions": "/var/log/f7u12rl.exceptions"
+         , "level": "warn"
+         , "path": "/var/log/f7u12rl.log"
+         }
+ 
 , "server": { "port":     24712
             , "hostname": "0.0.0.0"
             }

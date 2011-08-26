@@ -8,9 +8,11 @@ var http = require('http');
 var url = require('url');
 
 var curry = require('curry');
+var express = require('express');
 var flags = require('flags');
 var jade = require('jade');
 var redis = require('redis');
+var winston = require('winston');
 
 var enrage = require(__dirname + '/lib/enrage.js');
 var Cache = require(__dirname + '/lib/cache.js');
@@ -44,13 +46,15 @@ var FACE_COM_ERR_CACHE_TTL = 600;
 // redis client
 var rc;
 
+// express.js app object
+var app = express.createServer();
 
 
 /*** UTILITY BELT *************************************************************/
 
 var cryMeARiver = function (err) {
-  console.error(err);
-  console.error(err.stack);
+  winston.error(err);
+  winston.error(err.stack);
 }
 
 
@@ -102,21 +106,26 @@ var send500 = function(res) {
 
 /*** SERVER LOGIC *************************************************************/
 
-var handleRootReq = function (req, res) {
+// route: /:imgUrl
+//var handleRootReq = function (req, res) {
+app.get('/:b64?', function (req, res) {
   var request = url.parse(req.url, true);
   var src = request.query.src;
   
   if (!src) {
+    if (req.params.b64) {
+      var imgUrl = (new Buffer(req.params.b64, 'base64')).toString('utf8');
+    }
     jade.renderFile('views/index.jade', 
-                    { locals: { image: QUEEN_ELIZABETH }}, 
+                    { locals: { image: imgUrl || QUEEN_ELIZABETH }}, 
                     curry([res], sendHTML));
     return;
   }
   
-  console.info('enraging URL "' + src + '"');
+  winston.info('enraging URL "' + src + '"');
   Cache.requested(src, req);
   Cache.check(src, curry([res, src], gotCacheResponse));
-}
+});
 
 
 var gotCacheResponse = function (res, src, err, exists) {
@@ -127,10 +136,10 @@ var gotCacheResponse = function (res, src, err, exists) {
   }
   
   if (exists === 1) {
-    console.info('cache hit');
+    winston.info('cache hit for ' + src);
     Cache.load(src, curry([res, src], gotCached));
   } else {
-    console.info('cache miss');
+    winston.info('cache miss for ' + src);
     enrage.enrageUrl(src, curry([res, src], gotRage));
   }
 }
@@ -162,8 +171,8 @@ var gotRage = function(res, src, err, data, info) {
       Cache.save(src, err.code + FACE_COM_SAFE_DELIMITER + err.message);
       Cache.expire(src, FACE_COM_ERR_CACHE_TTL);
     } else {
-      console.error(err);
-      console.error(err.stack);
+      winston.error(err);
+      winston.error(err.stack);
       sendErr(res, 500, err.message);
     }
     return;
@@ -181,21 +190,28 @@ var gotRage = function(res, src, err, data, info) {
 
 
 
-/*** MAIN *********************************************************************/
-
-process.on('uncaughtException', function (err) {
-  console.log('Caught uncaught exception: ' + err);
-  console.log(err.stack);
-});
+/*** MAIN (INITIALIZATION)  ***************************************************/
 
 flags.defineString('conf', 'conf.json', 'Configuration file');
 flags.parse();
 var confPath = flags.get('conf');
 var confText = fs.readFileSync(confPath, 'utf8');
-var conf = JSON.parse(confText);
+try {
+  var conf = JSON.parse(confText);
+} catch(err) { 
+  console.error(err);
+  console.error(err.stack);
+}
 
 rc = redis.createClient(conf.redis.port, conf.redis.host);
 Cache.configure(rc);
 enrage.configure(conf.face_com.api_key, conf.face_com.api_secret);
+winston.add(winston.transports.File, { filename: conf.log.path
+                                     , level:    conf.log.level
+                                     }) 
+winston.remove(winston.transports.Console);
+winston.handleExceptions(new winston.transports.File(
+  { filename: conf.log.exceptions }
+))
 
-http.createServer(handleRootReq).listen(conf.server.port, conf.server.hostname);
+app.listen(conf.server.port);
