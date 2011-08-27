@@ -1,9 +1,8 @@
-{ "face_com": { "api_key":    "22cbdae7628d96de0819acae4be65635"
-              , "api_secret": "1d5f0083b79073786b615eba16ae8155"
+{ "face_com": { "api_key":    "Your face.com API key"
+              , "api_secret": "Your face.com API secret"
               }
              
-, "log": { "exceptions": "/var/log/f7u12rl.exceptions"
-         , "level": "warn"
+, "log": { "level": "warn"
          , "path": "/var/log/f7u12rl.log"
          }
  
