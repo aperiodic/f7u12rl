@@ -10,28 +10,40 @@ html
       }
       input { font-size: 20px; }
       #wrapper { margin-top: 1em; }
-      #label { margin-left: 0.05em; }
+      #srcLink {
+        float: left;
+        margin-left: 0.5em;
+        margin-right: 0.5em;
+        margin-top: 1.7em;
+        margin-bottom: 2.5em;
+        font-size: 14px;
+      }
+      #redditLink { float: left; margin-top: 0.5em }
+      #label { 
+        clear: both;
+        margin-left: 0.05em; 
+      }
       #enrage {
         border: 2px solid black;
         background-color: #c2c2c2;
         margin-left: 0.5em;
         padding: 2px;
-        
       }
       #enrage:hover {
         border: 4px solid red;
         cursor: pointer;
         padding: 0px;
       }
-      #holdon, #msgs {
+      #msgs {
         font-size: 18px;
         font-weight: bold;
-      }
-      #msgs {
         margin-bottom: 2em;
       }
       .hidden { display: none }
       .error { color: #91100a }
+      #footer {
+        margin-top: 2em;
+        font-size: 16px;
 
 
     script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js')
@@ -104,27 +116,33 @@ html
 
       var swapImage = function (imgUrl) {
         $('#img').attr('src', '/?src=' + imgUrl);
+        $('#srcInput').attr('placeholder', imgUrl);
+        $('#srcLink').attr('href'
       }
       
       $(document).ready(function () {
         if (Modernizr.history) {
           // setup history pop listener to restore previous photo
           window.addEventListener('popstate', function (e) {
-            if (document.location.pathname.length > 1) {
-              var imgUrl = window.atob(document.location.pathname.replace('/',
-                                                                          ''));
-              $('#image').slideUp(200, function() {
-                swapImage(imgUrl);
-              })
-              checkStatus(imgUrl);
-            } else {
-              var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
-                           'images2/QR/queenelizabethii.jpg';
-              if ($('#img').attr('src') !== '/?src=' + imgUrl) {
+            if (window.history.length > 1) {
+              if (document.location.pathname.length > 1) {
+                var imgUrl = window.atob(document.location.pathname.replace('/',
+                                                                            ''));
                 $('#image').slideUp(200, function() {
                   swapImage(imgUrl);
                 })
                 checkStatus(imgUrl);
+              } 
+            } else {
+              if (document.location.pathname.length === 1) {
+                var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
+                             'images2/QR/queenelizabethii.jpg';
+                if ($('#img').attr('src') !== '/?src=' + imgUrl) {
+                  $('#image').slideUp(200, function() {
+                    swapImage(imgUrl);
+                  })
+                  checkStatus(imgUrl);
+                }
               }
             }
           })
@@ -149,10 +167,20 @@ html
   body
     #image
       img#img(src='/?src=#{image}')
-    #holdon
+      #link
+        #redditLink
+          a(href="http://www.reddit.com/submit", onclick="window.location = 'http://www.reddit.com/submit?url=' + encodeURIComponent(window.location); return false") 
+            img(src="http://www.reddit.com/static/spreddit7.gif", alt="submit to reddit", border="0")
+        #srcLink
+          a(href=image) 
+            | view original
     #wrapper
       #msgs
       #label FFFFFFFUUUUUUUUUUURL:
       form(action='/')
         input#srcInput(type='text', name='src', size=60, placeholder=image)
         input#enrage(type='submit', value='&nbsp;ENRAGE&nbsp;')
+      #footer
+        | Made by <a href="http://github.com/aperiodic">Dan Lidral-Porter</a>
+        | using <a href="http://nodejs.org">node.js</a> and 
+        | <a href="http://face.com">face.com</a>.
