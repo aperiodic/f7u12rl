@@ -52,8 +52,19 @@ html
       ,p.push((e[q]?"":"no-")+q));t(""),i=k=null,e._version=d;return e}(this,
       this.document);
     script
+
+      var spinOpts = { lines:  12
+                     , length: 28
+                     , width:  9
+                     , radius: 27
+                     , trail:  66
+                     , speed:  1.0
+                     , shadow: true
+                     };
+      var spinner;
  
       var oops = function(xhr, textStatus) {
+        clearTimeout(loadingTickTID);
         $('#msgs').empty();
         $('#msgs').append('<span class="error">SERVER SAYS: ' +
                           xhr.responseText.replace(/_/g, ' ') + '</span>');
@@ -63,6 +74,7 @@ html
       }
 
       var huzzah = function(resp) {
+        clearTimeout(loadingTickTID);
         if (resp === 'No faces found') {
           $('#msgs').empty();
           $('#msgs').append('SERVER SAYS: NO FACES FOUND');
@@ -74,22 +86,35 @@ html
       }
 
       var checkStatus = function (imgUrl) {
+        $('#msgs').empty();
+        $('#msgs').append('Loading...');
+        loadingTickTID = setTimeout(function(){loadingTick()}, 1000);
+        $('#msgs').removeClass('hidden');
         $.ajax({ url:  '/status/'
                , data:     {src: imgUrl}
                , error:    oops
                , success:  huzzah
                })
       }
+      var loadingTick = function () {
+        $('#msgs').append('.');
+        loadingTickTID = setTimeout(function(){loadingTick()}, 1000);
+      }
+      var loadingTickTID;
+
+      var swapImage = function (imgUrl) {
+        $('#img').attr('src', '/?src=' + imgUrl);
+      }
       
       $(document).ready(function () {
-        // TODO: make sure still works on bad url
         if (Modernizr.history) {
           // setup history pop listener to restore previous photo
           window.addEventListener('popstate', function (e) {
             if (document.location.pathname.length > 1) {
-              var imgUrl = window.atob(document.location.pathname.replace('/', ''));
+              var imgUrl = window.atob(document.location.pathname.replace('/',
+                                                                          ''));
               $('#image').slideUp(200, function() {
-                $('#img').attr('src', '/?src=' + imgUrl);
+                swapImage(imgUrl);
               })
               checkStatus(imgUrl);
             } else {
@@ -97,7 +122,7 @@ html
                            'images2/QR/queenelizabethii.jpg';
               if ($('#img').attr('src') !== '/?src=' + imgUrl) {
                 $('#image').slideUp(200, function() {
-                  $('#img').attr('src', '/?src=' + imgUrl);
+                  swapImage(imgUrl);
                 })
                 checkStatus(imgUrl);
               }
@@ -110,7 +135,9 @@ html
           $('#image').slideUp(200, function() {
             $('#img').attr('src', '/?src=' + imgUrl);
             if (Modernizr.history) {
-              history.pushState(null, null, '/' + window.btoa(imgUrl));
+              history.pushState({haveMoved: true}, 
+                                '', 
+                                '/' + window.btoa(imgUrl));
             }
           })
           checkStatus(imgUrl);
