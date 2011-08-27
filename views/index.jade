@@ -74,7 +74,7 @@ html
       }
 
       var checkStatus = function (imgUrl) {
-        $.ajax({ url:  '/'
+        $.ajax({ url:  '/status/'
                , data:     {src: imgUrl}
                , error:    oops
                , success:  huzzah
@@ -82,12 +82,9 @@ html
       }
       
       $(document).ready(function () {
-        if (document.location.pathname.length > 1) {
-          var imgUrl = window.atob(document.location.pathname.replace('/', ''));
-          checkStatus(imgUrl);
-        }
- 
+        // TODO: make sure still works on bad url
         if (Modernizr.history) {
+          // setup history pop listener to restore previous photo
           window.addEventListener('popstate', function (e) {
             if (document.location.pathname.length > 1) {
               var imgUrl = window.atob(document.location.pathname.replace('/', ''));
@@ -95,11 +92,19 @@ html
                 $('#img').attr('src', '/?src=' + imgUrl);
               })
               checkStatus(imgUrl);
+            } else {
+              var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
+                           'images2/QR/queenelizabethii.jpg';
+              if ($('#img').attr('src') !== '/?src=' + imgUrl) {
+                $('#image').slideUp(200, function() {
+                  $('#img').attr('src', '/?src=' + imgUrl);
+                })
+                checkStatus(imgUrl);
+              }
             }
           })
         }
       
-        $('form').attr('action', undefined);
         $('form').submit(function (e) {
           var imgUrl = $('#srcInput').val();
           $('#image').slideUp(200, function() {

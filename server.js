@@ -74,11 +74,13 @@ var sendHTML = function (res, err, html) {
   }
   
   // make a buffer so we know the byte length
-  var htmlData = new Buffer(html, 'utf8');
+  var htmlData = html ? new Buffer(html, 'utf8') : {length: 0};
   res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8'
-                     , 'Content-Length': html.length
+                     , 'Content-Length': htmlData.length
                      });
-  res.write(html);
+  if (html) {
+    res.write(htmlData);
+  }
   res.end();
 }
 
@@ -106,8 +108,19 @@ var send500 = function(res) {
 
 /*** SERVER LOGIC *************************************************************/
 
-// route: /:imgUrl
-//var handleRootReq = function (req, res) {
+// This is almost exactly the same as the above handler, except that we don't
+// send the image, just an empty 200 response, if all goes well. 
+// This is used by the client-side js to check for bad requests and whatnot, so
+// it can display error messages to the user.
+app.get('/status/', function (req, res) {
+  var request = url.parse(req.url, true);
+  var src = request.query.src;
+  if (!src) { sendErr(res, 400, 'No "src" param found'); return }
+  
+  Cache.check(src, curry([res, src, false], gotCacheResponse));
+})
+
+
 app.get('/:b64?', function (req, res) {
   var request = url.parse(req.url, true);
   var src = request.query.src;
@@ -124,11 +137,11 @@ app.get('/:b64?', function (req, res) {
   
   winston.info('enraging URL "' + src + '"');
   Cache.requested(src, req);
-  Cache.check(src, curry([res, src], gotCacheResponse));
-});
+  Cache.check(src, curry([res, src, true], gotCacheResponse));
+})
 
 
-var gotCacheResponse = function (res, src, err, exists) {
+var gotCacheResponse = function (res, src, sendImage, err, exists) {
   if (err) { 
     cryMeARiver(err); 
     send500(res);
@@ -137,16 +150,16 @@ var gotCacheResponse = function (res, src, err, exists) {
   
   if (exists === 1) {
     winston.info('cache hit for ' + src);
-    Cache.load(src, curry([res, src], gotCached));
+    Cache.load(src, curry([res, src, sendImage], gotCached));
   } else {
     winston.info('cache miss for ' + src);
-    enrage.enrageUrl(src, curry([res, src], gotRage));
+    enrage.enrageUrl(src, curry([res, src, sendImage], gotRage));
   }
 }
 
 
-var gotCached = function (res, src, err, data) {
-  if (err) { 
+var gotCached = function (res, src, sendImage, err, data) {
+  if (err) {
     cryMeARiver(err);
     send500(res);
     return;
@@ -160,11 +173,15 @@ var gotCached = function (res, src, err, data) {
     sendErr(res, code_and_message[0], code_and_message[1]);
   }
   
-  sendPNG(res, new Buffer(data, 'base64'));
+  if (sendImage) {
+    sendPNG(res, new Buffer(data, 'base64'));
+  } else {
+    sendHTML(res, null);
+  }
 }
 
 
-var gotRage = function(res, src, err, data, info) {
+var gotRage = function(res, src, sendImage, err, data, info) {
   if (err) {
     if (err.code) {
       sendErr(res, err.code, err.message);
@@ -184,13 +201,22 @@ var gotRage = function(res, src, err, data, info) {
     return;
   }
   
-  sendPNG(res, data);
+  if (sendImage) {
+    sendPNG(res, data);
+  } else {
+    sendHTML(res, null);
+  }
   Cache.save(src, data.toString('base64'));
 }
 
 
 
-/*** MAIN (INITIALIZATION)  ***************************************************/
+/*** MAIN (INITIALIZATION) ****************************************************/
+
+process.on('uncaughtException', function (err) {
+  console.error(err);
+  console.error(err.stack);
+})
 
 flags.defineString('conf', 'conf.json', 'Configuration file');
 flags.parse();
@@ -201,17 +227,17 @@ try {
 } catch(err) { 
   console.error(err);
   console.error(err.stack);
+  process.exit(1);
 }
 
 rc = redis.createClient(conf.redis.port, conf.redis.host);
 Cache.configure(rc);
 enrage.configure(conf.face_com.api_key, conf.face_com.api_secret);
-winston.add(winston.transports.File, { filename: conf.log.path
-                                     , level:    conf.log.level
-                                     }) 
-winston.remove(winston.transports.Console);
-winston.handleExceptions(new winston.transports.File(
-  { filename: conf.log.exceptions }
-))
+winston.add(winston.transports.File, { filename:         conf.log.path
+                                     //, handleExceptions: true
+                                     , level:            conf.log.level
+                                     })
+//winston.handleExceptions();
+//winston.remove(winston.transports.Console);
 
 app.listen(conf.server.port);
