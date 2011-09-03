@@ -117,24 +117,22 @@ html
       var swapImage = function (imgUrl) {
         $('#img').attr('src', '/?src=' + imgUrl);
         $('#srcInput').attr('placeholder', imgUrl);
-        $('#srcLink').attr('href'
+        $('#srcLink a').attr('href', imgUrl);
       }
       
       $(document).ready(function () {
         if (Modernizr.history) {
           // setup history pop listener to restore previous photo
           window.addEventListener('popstate', function (e) {
-            if (window.history.length > 1) {
-              if (document.location.pathname.length > 1) {
-                var imgUrl = window.atob(document.location.pathname.replace('/',
-                                                                            ''));
-                $('#image').slideUp(200, function() {
-                  swapImage(imgUrl);
-                })
-                checkStatus(imgUrl);
-              } 
+            if (document.location.pathname.length > 1) {
+              var imgUrl = window.atob(document.location.pathname.replace('/',
+                                                                          ''));
+              $('#image').slideUp(200, function() {
+                swapImage(imgUrl);
+              })
+              checkStatus(imgUrl);
             } else {
-              if (document.location.pathname.length === 1) {
+              if (window.history.length > 1) {
                 var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
                              'images2/QR/queenelizabethii.jpg';
                 if ($('#img').attr('src') !== '/?src=' + imgUrl) {
@@ -151,7 +149,8 @@ html
         $('form').submit(function (e) {
           var imgUrl = $('#srcInput').val();
           $('#image').slideUp(200, function() {
-            $('#img').attr('src', '/?src=' + imgUrl);
+            //$('#img').attr('src', '/?src=' + imgUrl);
+            swapImage(imgUrl);
             if (Modernizr.history) {
               history.pushState({haveMoved: true}, 
                                 '', 

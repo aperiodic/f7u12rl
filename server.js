@@ -6,10 +6,12 @@
 var fs = require('fs');
 var http = require('http');
 var url = require('url');
+var util = require('util');
 
 var curry = require('curry');
 var express = require('express');
 var flags = require('flags');
+var gm = require('gm');
 var jade = require('jade');
 var redis = require('redis');
 var winston = require('winston');
@@ -24,13 +26,14 @@ var I_DONE_GOOFED = 'I DONE GOOFED (ERROR 500)';
 
 var NO_FACES_MSG = 'No faces found'
 var NO_FACES_SYM = 'nofaces';
+var LOAD_JPG_SYM = 'hit';
 
 // If a cached value from redis has a length longer than this, we assume it's a
 // base64-encoded PNG image; otherwise, we assume it's a special symbol denoting
 // that, e.g., there are no faces in the image, or Face.com couldn't get a valid
 // image. If any of these symbols exceed this length ceiling, bad things will
 // happen.
-var REDIS_SYM_LENGTH_CEIL = 100;
+var SYM_LENGTH_CEIL = 100;
 
 var QUEEN_ELIZABETH = 'http://www.librarising.com/astrology/celebs/images2' +
                       '/QR/queenelizabethii.jpg';
@@ -39,6 +42,10 @@ var QUEEN_ELIZABETH = 'http://www.librarising.com/astrology/celebs/images2' +
 // since neither of these things will contain a pipe.
 var FACE_COM_SAFE_DELIMITER = '|';
 var FACE_COM_ERR_CACHE_TTL = 600;
+
+var RAGE_ERR_REGEX = /(^\d{2,3})\|([^\|]*)\|(\d+)$/;
+
+var IMAGES_DIR = 'resources/images';
 
 
 /*** GLOBALS ******************************************************************/
@@ -58,8 +65,8 @@ var cryMeARiver = function (err) {
 }
 
 
-var sendPNG = function (res, imageData) {
-  res.writeHead(200, { 'Content-Type': 'image/png'
+var sendImg = function (res, type, imageData) {
+  res.writeHead(200, { 'Content-Type': 'image/' + type
                      , 'Content-Length': imageData.length
                      });
   res.write(imageData);
@@ -104,20 +111,38 @@ var send500 = function(res) {
   sendErr(res, 500, I_DONE_GOOFED);
 }
 
+var deleteIfErr = function (path, err) {
+  if (err) {
+    cryMeARiver(err);
+    fs.unlink(path, reportIfErr);
+  }
+}
+
+var reportIfErr = function (err) {
+  if (err) cryMeARiver(err);
+}
+
+var imagePath = function (src, extension) {
+  var b64 = (new Buffer(src)).toString('base64');
+  if (extension === undefined) extension = '.jpg';
+  return IMAGES_DIR + '/' + b64 + extension;
+}
 
 
 /*** SERVER LOGIC *************************************************************/
 
-// This is almost exactly the same as the above handler, except that we don't
+// This is almost exactly the same as the handler below, except that we don't
 // send the image, just an empty 200 response, if all goes well. 
 // This is used by the client-side js to check for bad requests and whatnot, so
-// it can display error messages to the user.
+// it can display error messages to the user, without fetching the image all
+// over again.
 app.get('/status/', function (req, res) {
   var request = url.parse(req.url, true);
   var src = request.query.src;
   if (!src) { sendErr(res, 400, 'No "src" param found'); return }
   
-  Cache.check(src, curry([res, src, false], gotCacheResponse));
+  var fname = imagePath(src);
+  fs.readFile(fname, curry([res, src, fname, false], gotFile));
 })
 
 
@@ -137,44 +162,45 @@ app.get('/:b64?', function (req, res) {
   
   winston.info('enraging URL "' + src + '"');
   Cache.requested(src, req);
-  Cache.check(src, curry([res, src, true], gotCacheResponse));
+  var fname = imagePath(src);
+  fs.readFile(fname, curry([res, src, fname, true], gotFile));
 })
 
 
-var gotCacheResponse = function (res, src, sendImage, err, exists) {
-  if (err) { 
-    cryMeARiver(err); 
-    send500(res);
-    return;
-  }
-  
-  if (exists === 1) {
-    winston.info('cache hit for ' + src);
-    Cache.load(src, curry([res, src, sendImage], gotCached));
-  } else {
-    winston.info('cache miss for ' + src);
-    enrage.enrageUrl(src, curry([res, src, sendImage], gotRage));
-  }
-}
-
-
-var gotCached = function (res, src, sendImage, err, data) {
+var gotFile = function (res, src, fname, sendImage, err, data) {
   if (err) {
-    cryMeARiver(err);
-    send500(res);
+    // if it's just a ENOENT error, then the cache file DNE
+    if (err.code === 'ENOENT') {
+      enrage.enrageUrl(src, curry([res, src, sendImage], gotRage));
+    } else {
+      send500(res);
+      if (err.message !== 'Could not load image') {
+        cryMeARiver(err);
+      }
+    }
     return;
   }
   
-  if (data === NO_FACES_SYM) {
-    sendNoFaces(res);
+  if (data.length <= SYM_LENGTH_CEIL) {
+    if (data.toString('utf8') === NO_FACES_SYM) {
+      sendNoFaces(res);
+    } else if ((rage_err = data.toString('utf8').match(RAGE_ERR_REGEX))) {
+      var code = rage_err[1] * 1;
+      var msg = rage_err[2];
+      var timeout = rage_err[3] * 1;
+      sendErr(res, code, msg);
+      if (timeout < ((new Date) * 1)) {
+        removeCachedFile(fname);
+      }
+    } else {
+      var code_and_message = data.toString('utf8').split(FACE_COM_SAFE_DELIMITER);
+      sendErr(res, code_and_message[0], code_and_message[1]);
+    }
     return;
-  } else if (data.length <= REDIS_SYM_LENGTH_CEIL) {
-    var code_and_message = data.split(FACE_COM_SAFE_DELIMITER);
-    sendErr(res, code_and_message[0], code_and_message[1]);
   }
   
   if (sendImage) {
-    sendPNG(res, new Buffer(data, 'base64'));
+    sendImg(res, 'jpeg', data);
   } else {
     sendHTML(res, null);
   }
@@ -182,33 +208,66 @@ var gotCached = function (res, src, sendImage, err, data) {
 
 
 var gotRage = function(res, src, sendImage, err, data, info) {
+  var path = imagePath(src, '');
   if (err) {
-    if (err.code) {
-      sendErr(res, err.code, err.message);
-      Cache.save(src, err.code + FACE_COM_SAFE_DELIMITER + err.message);
-      Cache.expire(src, FACE_COM_ERR_CACHE_TTL);
+    if (err.statuscode) {
+      sendErr(res, err.statuscode, err.message);
+      if (err.statuscode === 404) {
+        // a 404 statuscode means the input image was screwed up somehow. this
+        // should be cached indefinitely because it's unlikely to be a transient
+        // issue
+        var expiration = 0;
+      } else {
+        // 500s are errors that could be transient (for example, if we go over
+        // our API usage)
+        var expiration = (new Date) * 1 + FACE_COM_ERR_CACHE_TTL;
+        if (err.message !== 'Could not load image') {
+          cryMeARiver(err);
+        }
+      }
+      
+      var RAGE_ERR = err.statuscode + FACE_COM_SAFE_DELIMITER + err.message +
+                     FACE_COM_SAFE_DELIMITER + expiration;
+      var fname = path + '.jpg';
+      fs.writeFile(fname, new Buffer(RAGE_ERR), curry([fname], deleteIfErr));
     } else {
-      winston.error(err);
-      winston.error(err.stack);
-      sendErr(res, 500, err.message);
+      send500(res);
+      cryMeARiver(err);
     }
     return;
   }
   
   if (!data) {
     sendNoFaces(res);
-    Cache.save(src, NO_FACES_SYM);
+    var fname = path + '.jpg';
+    fs.writeFile(fname, new Buffer(NO_FACES_SYM), curry([fname], deleteIfErr));
     return;
   }
   
   if (sendImage) {
-    sendPNG(res, data);
+    sendImg(res, 'png', data);
   } else {
     sendHTML(res, null);
   }
-  Cache.save(src, data.toString('base64'));
+  fs.writeFile(path + '.png', data, curry([src, path], convertToJPEG));
 }
 
+
+var convertToJPEG = function (src, path, err) {
+  gm(path + '.png').write(path + '.jpg', curry([path], removePNG));
+}
+
+var removePNG = function (path, err) {
+  if (err) {
+    removeCachedFile(path + '.jpg');
+  } else {
+    fs.unlink(path + '.png', reportIfErr);
+  }
+}
+
+var removeCachedFile = function (fname) {
+  fs.unlink(fname, reportIfErr);
+}
 
 
 /*** MAIN (INITIALIZATION) ****************************************************/
