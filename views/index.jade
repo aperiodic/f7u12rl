@@ -38,6 +38,7 @@ html
         font-size: 18px;
         font-weight: bold;
         margin-bottom: 2em;
+        clear: both;
       }
       .hidden { display: none }
       .error { color: #91100a }
@@ -47,6 +48,14 @@ html
 
 
     script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js')
+    script
+      /* Stolen from the curry module by Dominic Tarr
+       * https://github.com/dominictarrr
+       */
+      function curry(){var c,a,d,e;for(key in arguments){var b=arguments[key];
+      !a&&Array.isArray(b)?d?a=b:c=b:!d&&typeof b==="function"?d=b:e=b}
+      return function(){return d.apply(e,append([].concat(c||[]),arguments)
+      .concat(a||[]))}}function append(c,a){for(i in a)c.push(a[i]);return c};
     script
       /* Modernizr 2.0.6 (Custom Build) | MIT & BSD
        * http://www.modernizr.com/
@@ -65,17 +74,15 @@ html
       this.document);
     script
 
-      var spinOpts = { lines:  12
-                     , length: 28
-                     , width:  9
-                     , radius: 27
-                     , trail:  66
-                     , speed:  1.0
-                     , shadow: true
-                     };
-      var spinner;
+      var startSwap = function (imgUrl) {
+        var sequence = newImageSequence();
+        $('#image').slideUp(200, function() {
+          swapImage(imgUrl, sequence);
+        })
+        checkStatus(imgUrl, sequence);
+      }
  
-      var oops = function(xhr, textStatus) {
+      var oops = function (xhr, textStatus) {
         clearTimeout(loadingTickTID);
         $('#msgs').empty();
         $('#msgs').append('<span class="error">SERVER SAYS: ' +
@@ -85,27 +92,23 @@ html
         $('#msgs').removeClass('hidden');
       }
 
-      var huzzah = function(resp) {
-        clearTimeout(loadingTickTID);
-        if (resp === 'No faces found') {
-          $('#msgs').empty();
-          $('#msgs').append('SERVER SAYS: NO FACES FOUND');
-          $('#msgs').removeClass('hidden');
+      var huzzah = function (origImgUrl, sequence, resp) {
+        if (sequence.imageSwapped) {
+          sequence.callback(origImgUrl, resp);
         } else {
-          $('#msgs').addClass('hidden');
-          $('#image').slideDown(200);
+          sequence.callback = curry([origImgUrl, resp], sequence.callback)
         }
       }
 
-      var checkStatus = function (imgUrl) {
+      var checkStatus = function (imgUrl, sequence) {
         $('#msgs').empty();
-        $('#msgs').append('Loading...');
+        $('#msgs').append('Enraging...');
         loadingTickTID = setTimeout(function(){loadingTick()}, 1000);
         $('#msgs').removeClass('hidden');
         $.ajax({ url:  '/status/'
                , data:     {src: imgUrl}
                , error:    oops
-               , success:  huzzah
+               , success:  curry([imgUrl, sequence], huzzah)
                })
       }
       var loadingTick = function () {
@@ -114,10 +117,29 @@ html
       }
       var loadingTickTID;
 
-      var swapImage = function (imgUrl) {
+      var swapImage = function (imgUrl, sequence) {
         $('#img').attr('src', '/?src=' + imgUrl);
         $('#srcInput').attr('placeholder', imgUrl);
         $('#srcLink a').attr('href', imgUrl);
+        sequence.imageSwapped = true;
+        sequence.callback();
+      }
+
+      var revealImage = function (origImgUrl, resp) {
+        // this if statement triggers when swapImage fires before huzzah
+        // we bail because huzzah will call us again with our arguments
+        if (origImgUrl === undefined && resp === undefined) return;
+        
+        clearTimeout(loadingTickTID);
+        if (resp === 'No faces found') {
+          $('#img').attr('src', origImgUrl);
+        } 
+        $('#msgs').addClass('hidden');
+        $('#image').slideDown(200);
+      }
+
+      var newImageSequence = function () {
+        return {callback: revealImage};
       }
       
       $(document).ready(function () {
@@ -127,19 +149,13 @@ html
             if (document.location.pathname.length > 1) {
               var imgUrl = window.atob(document.location.pathname.replace('/',
                                                                           ''));
-              $('#image').slideUp(200, function() {
-                swapImage(imgUrl);
-              })
-              checkStatus(imgUrl);
+              startSwap(imgUrl); 
             } else {
               if (window.history.length > 1) {
                 var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
                              'images2/QR/queenelizabethii.jpg';
                 if ($('#img').attr('src') !== '/?src=' + imgUrl) {
-                  $('#image').slideUp(200, function() {
-                    swapImage(imgUrl);
-                  })
-                  checkStatus(imgUrl);
+                  startSwap(imgUrl);
                 }
               }
             }
@@ -148,16 +164,17 @@ html
       
         $('form').submit(function (e) {
           var imgUrl = $('#srcInput').val();
+          var sequence = newImageSequence();
           $('#image').slideUp(200, function() {
             //$('#img').attr('src', '/?src=' + imgUrl);
-            swapImage(imgUrl);
+            swapImage(imgUrl, sequence);
             if (Modernizr.history) {
               history.pushState({haveMoved: true}, 
                                 '', 
                                 '/' + window.btoa(imgUrl));
             }
           })
-          checkStatus(imgUrl);
+          checkStatus(imgUrl, sequence);
           e.preventDefault();
           return false;
         })
@@ -181,5 +198,5 @@ html
         input#enrage(type='submit', value='&nbsp;ENRAGE&nbsp;')
       #footer
         | Made by <a href="http://github.com/aperiodic">Dan Lidral-Porter</a>
-        | using <a href="http://nodejs.org">node.js</a> and 
+        | using <a href="http://nodejs.org">node.js</a> and
         | <a href="http://face.com">face.com</a>.

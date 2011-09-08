@@ -28,11 +28,10 @@ var NO_FACES_MSG = 'No faces found'
 var NO_FACES_SYM = 'nofaces';
 var LOAD_JPG_SYM = 'hit';
 
-// If a cached value from redis has a length longer than this, we assume it's a
-// base64-encoded PNG image; otherwise, we assume it's a special symbol denoting
-// that, e.g., there are no faces in the image, or Face.com couldn't get a valid
-// image. If any of these symbols exceed this length ceiling, bad things will
-// happen.
+// If the contents of a cache file are longer than this, we assume it's a valid
+// JPEG image; otherwise, we assume it's a special symbol denoting that, e.g., 
+// there are no faces in the image, or Face.com couldn't get a valid image. If 
+// any of these symbols exceed this length ceiling, bad things will happen.
 var SYM_LENGTH_CEIL = 100;
 
 var QUEEN_ELIZABETH = 'http://www.librarising.com/astrology/celebs/images2' +
@@ -55,6 +54,9 @@ var rc;
 
 // express.js app object
 var app = express.createServer();
+
+// jade function 
+var renderIndex;
 
 
 /*** UTILITY BELT *************************************************************/
@@ -154,9 +156,8 @@ app.get('/:b64?', function (req, res) {
     if (req.params.b64) {
       var imgUrl = (new Buffer(req.params.b64, 'base64')).toString('utf8');
     }
-    jade.renderFile('views/index.jade', 
-                    { locals: { image: imgUrl || QUEEN_ELIZABETH }}, 
-                    curry([res], sendHTML));
+    var index = renderIndex({image: imgUrl || QUEEN_ELIZABETH });
+    sendHTML(res, null, index);
     return;
   }
   
@@ -277,6 +278,7 @@ process.on('uncaughtException', function (err) {
   console.error(err.stack);
 })
 
+ 
 flags.defineString('conf', 'conf.json', 'Configuration file');
 flags.parse();
 var confPath = flags.get('conf');
@@ -288,6 +290,9 @@ try {
   console.error(err.stack);
   process.exit(1);
 }
+
+var indexTemplate = fs.readFileSync(__dirname + '/views/index.jade');
+renderIndex = jade.compile(indexTemplate, {});
 
 rc = redis.createClient(conf.redis.port, conf.redis.host);
 Cache.configure(rc);
