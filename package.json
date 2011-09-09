@@ -1,0 +1,20 @@
+{ "name" :         "f7u12rl"
+, "description" :  "Replace faces in any image on the web with rage faces"
+, "keywords" :     ["face", "recognition", "rage", "reddit"]
+, "version" :      "0.1.0"
+, "author" :       "Dan Lidral-Porter <dlp@aperiodic.org>"
+, "engines" :      { "node" : ">= 0.4.10" }
+, "directories" :  { "lib" : "./lib"}
+, "bin" :          { "f7u12rl" : "./server.js" }
+
+, "dependencies" : { "canvas" :  "0.7.x"
+                   , "curry" :   "0.0.3"
+                   , "express" : "2.4.x"
+                   , "flags" :   "0.1.x"
+                   , "gm" :      "0.5.0"
+                   , "hiredis" : "0.1.x"
+                   , "redis" :   "0.6.x"
+                   , "jade" :    "0.15.x"
+                   , "winston" : "0.4.x"
+                   }
+}
