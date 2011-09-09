@@ -17,7 +17,7 @@ var redis = require('redis');
 var winston = require('winston');
 
 var enrage = require(__dirname + '/lib/enrage.js');
-var Cache = require(__dirname + '/lib/cache.js');
+var Stats = require(__dirname + '/lib/stats.js');
 
 
 /*** RUNTIME #DEFINES *********************************************************/
@@ -162,7 +162,7 @@ app.get('/:b64?', function (req, res) {
   }
   
   winston.info('enraging URL "' + src + '"');
-  Cache.requested(src, req);
+  Stats.hit(src, req);
   var fname = imagePath(src);
   fs.readFile(fname, curry([res, src, fname, true], gotFile));
 })
@@ -273,12 +273,6 @@ var removeCachedFile = function (fname) {
 
 /*** MAIN (INITIALIZATION) ****************************************************/
 
-process.on('uncaughtException', function (err) {
-  console.error(err);
-  console.error(err.stack);
-})
-
- 
 flags.defineString('conf', 'conf.json', 'Configuration file');
 flags.parse();
 var confPath = flags.get('conf');
@@ -295,13 +289,12 @@ var indexTemplate = fs.readFileSync(__dirname + '/views/index.jade');
 renderIndex = jade.compile(indexTemplate, {});
 
 rc = redis.createClient(conf.redis.port, conf.redis.host);
-Cache.configure(rc);
+Stats.configure(rc);
 enrage.configure(conf.face_com.api_key, conf.face_com.api_secret);
 winston.add(winston.transports.File, { filename:         conf.log.path
-                                     //, handleExceptions: true
+                                     , handleExceptions: true
                                      , level:            conf.log.level
                                      })
-//winston.handleExceptions();
-//winston.remove(winston.transports.Console);
+winston.remove(winston.transports.Console);
 
 app.listen(conf.server.port);
