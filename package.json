@@ -6,6 +6,7 @@
 , "engines" :      { "node" : ">= 0.4.10" }
 , "directories" :  { "lib" : "./lib"}
 , "bin" :          { "f7u12rl" : "./server.js" }
+, "scripts" :      { "test" : "./test/smoketest.sh" }
 
 , "dependencies" : { "canvas" :  "0.7.x"
                    , "curry" :   "0.0.3"
