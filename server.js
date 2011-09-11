@@ -58,6 +58,10 @@ var app = express.createServer();
 // jade function 
 var renderIndex;
 
+// track in-flight cache misses so other requests for the same image can hook
+// into it, minimizing work for each cache miss.
+var inFlight = {};
+
 
 /*** UTILITY BELT *************************************************************/
 
@@ -144,7 +148,8 @@ app.get('/status/', function (req, res) {
   if (!src) { sendErr(res, 400, 'No "src" param found'); return }
   
   var fname = imagePath(src);
-  fs.readFile(fname, curry([res, src, fname, false], gotFile));
+  var wres = {res: res, sendImage: false};
+  fs.readFile(fname, curry([wres, src, fname], gotFile));
 })
 
 
@@ -164,15 +169,28 @@ app.get('/:b64?', function (req, res) {
   winston.info('enraging URL "' + src + '"');
   Stats.hit(src, req);
   var fname = imagePath(src);
-  fs.readFile(fname, curry([res, src, fname, true], gotFile));
+  var wres = {res: res, sendImage: true};
+  fs.readFile(fname, curry([wres, src, fname], gotFile));
 })
 
 
-var gotFile = function (res, src, fname, sendImage, err, data) {
+var gotFile = function (wres, src, fname, err, data) {
+  var res = wres.res;
+  var sendImage = wres.sendImage;
+  
   if (err) {
     // if it's just a ENOENT error, then the cache file DNE
     if (err.code === 'ENOENT') {
-      enrage.enrageUrl(src, curry([res, src, sendImage], gotRage));
+      // see if there's an in-flight request for this image 
+      if (inFlight[src] === undefined) {
+        // nope, set the key to signal we've got this
+        inFlight[src] = [];
+        enrage.enrageUrl(src, curry([wres, src], gotRage));
+      } else {
+        // yup, add the response object to the list of those to be responded to
+        // upon completion
+        inFlight[src].append(wres);
+      }
     } else {
       send500(res);
       if (err.message !== 'Could not load image') {
@@ -208,7 +226,9 @@ var gotFile = function (res, src, fname, sendImage, err, data) {
 }
 
 
-var gotRage = function(res, src, sendImage, err, data, info) {
+var gotRage = function(wres, src, err, data, info) {
+  var res = wres.res;
+  var sendImage = wres.sendImage;
   var path = imagePath(src, '');
   if (err) {
     if (err.statuscode) {
@@ -238,19 +258,26 @@ var gotRage = function(res, src, sendImage, err, data, info) {
     return;
   }
   
+  var wresps = inFlight[src].push(wres);
+  for (var ri in wresps) {
+    var res = wresps[ri].res;
+    var sendImage = wresps[ri].sendImage;
+    if (!data) {
+      sendNoFaces(res);
+    } else if (sendImage) {
+      sendImg(res, 'png', data);
+    } else {
+      sendHTML(res, null);
+    }
+  }
+  delete inFlight[src];
+  
   if (!data) {
-    sendNoFaces(res);
     var fname = path + '.jpg';
     fs.writeFile(fname, new Buffer(NO_FACES_SYM), curry([fname], deleteIfErr));
-    return;
-  }
-  
-  if (sendImage) {
-    sendImg(res, 'png', data);
   } else {
-    sendHTML(res, null);
+    fs.writeFile(path + '.png', data, curry([src, path], convertToJPEG));
   }
-  fs.writeFile(path + '.png', data, curry([src, path], convertToJPEG));
 }
 
 

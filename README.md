@@ -7,7 +7,7 @@ f7u12rl
 Installation
 ------------
 
-If you have npm installed, then `npm install f7u12rl`.
+If you have npm, then just run `npm install f7u12rl`.
 
 You can also clone the git repo with 
 `git clone git@github.com/aperiodic/f7u12rl.git`.
