@@ -1,0 +1,50 @@
+TODO: load-test with siege. 
+
+My suspicion is that the event-loop being blocked while the CPU-intensive face
+compositing operation is going on is gonna murder the server under large loads.
+
+What I want is for the face compositing to be executed independently of the 
+main event loop, so the http server can make asynchronous calls to it and its 
+event loop can keep serving requests in the meantime.
+
+The best way to do this is just to break apart that operation into another 
+seperate node process, so I don't have to write any new code. 
+The question is then: how should the two processes be linked?
+
+I think the easiest way is just another http interface. 
+The front-end server would just serve the index.html compiled by jade using the
+parameters of the request, and that would cause the client/front-end-js to 
+request the actual image/status from the back-end "rage" server. 
+It's not too bad if the actual image request takes a bit, since we can display 
+some sort of loading thing with the front-end js which will show that the site's
+not broken, just a little slow :)
+    
+This would work well if reverse-proxied by nginx, since it has the ability to
+test for existence of a file when deciding whether or not to reverse-proxy a 
+particular request.
+This means nginx could serve cached jpgs without even bothering a node process,
+which is awesome because nginx is just a beast at serving static content.
+
+The flowchart for routing a request is:
+  * Check the request to see what it's expecting, i.e. if it's for an html file
+    or an image (is there a request header for this?). 
+    - If it's expecting html, reverse proxy it to the front-end node server.
+    - If it's expecting a jpg, go to the next step.
+    
+  * Check for the existence of the requested jpg in the cache directory. 
+    - If it exists, just serve it!
+    - If it doesn't, reverse proxy it to the rage server.
+ 
+Basically, this makes nginx our caching layer, meaning we only do the actual
+enraging operation on cache misses.
+Let `x` be the fraction of total requests which miss cache. 
+In effect, we've made the enraging bit 1/x times as fast, which is just gravy,
+since I expect cache misses to probably be around 5-10% of all requests, meaning
+this is gonna be an order-of-magnitude improvement.
+
+Of course, it's *possible* that the siege tests show that this handles large 
+loads just fine (perhaps most of the time spent in a cache miss is waiting on 
+the face.com API response, which is already asynchronous), in which case this 
+entire document has been rendered moot! 
+These are just the things I think about to pass the time while my internet is 
+down :).
