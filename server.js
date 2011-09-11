@@ -189,7 +189,7 @@ var gotFile = function (wres, src, fname, err, data) {
       } else {
         // yup, add the response object to the list of those to be responded to
         // upon completion
-        inFlight[src].append(wres);
+        inFlight[src].push(wres);
       }
     } else {
       send500(res);
