@@ -273,7 +273,7 @@ var removeCachedFile = function (fname) {
 
 /*** MAIN (INITIALIZATION) ****************************************************/
 
-flags.defineString('conf', 'conf.json', 'Configuration file');
+flags.defineString('conf', 'default.conf.json', 'Configuration file');
 flags.parse();
 var confPath = flags.get('conf');
 var confText = fs.readFileSync(confPath, 'utf8');
@@ -291,10 +291,13 @@ renderIndex = jade.compile(indexTemplate, {});
 rc = redis.createClient(conf.redis.port, conf.redis.host);
 Stats.configure(rc);
 enrage.configure(conf.face_com.api_key, conf.face_com.api_secret);
-winston.add(winston.transports.File, { filename:         conf.log.path
-                                     , handleExceptions: true
-                                     , level:            conf.log.level
-                                     })
-winston.remove(winston.transports.Console);
+
+if (conf.log.path !== "STDOUT") {
+  winston.add(winston.transports.File, { filename:         conf.log.path
+                                       , handleExceptions: true
+                                       , level:            conf.log.level
+                                       })
+  winston.remove(winston.transports.Console);
+}
 
 app.listen(conf.server.port);

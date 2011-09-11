@@ -3,10 +3,10 @@
               }
              
 , "log": { "level": "warn"
-         , "path": "/var/log/f7u12rl.log"
+         , "path": "STDOUT"
          }
  
-, "server": { "port":     24712
+, "server": { "port":     24718
             , "hostname": "0.0.0.0"
             }
             
