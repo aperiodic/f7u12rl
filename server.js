@@ -148,7 +148,7 @@ app.get('/status/', function (req, res) {
   if (!src) { sendErr(res, 400, 'No "src" param found'); return }
   
   var fname = imagePath(src);
-  var wres = {res: res, sendImage: false};
+  var wres = {res: res, expects: 'text'};
   fs.readFile(fname, curry([wres, src, fname], gotFile));
 })
 
@@ -169,14 +169,14 @@ app.get('/:b64?', function (req, res) {
   winston.info('enraging URL "' + src + '"');
   Stats.hit(src, req);
   var fname = imagePath(src);
-  var wres = {res: res, sendImage: true};
+  var wres = {res: res, expects: 'image'};
   fs.readFile(fname, curry([wres, src, fname], gotFile));
 })
 
 
 var gotFile = function (wres, src, fname, err, data) {
   var res = wres.res;
-  var sendImage = wres.sendImage;
+  var expects = wres.expects;
   
   if (err) {
     // if it's just a ENOENT error, then the cache file DNE
@@ -218,9 +218,9 @@ var gotFile = function (wres, src, fname, err, data) {
     return;
   }
   
-  if (sendImage) {
+  if (expects === 'image') {
     sendImg(res, 'jpeg', data);
-  } else {
+  } else if (true || expects === 'text') {
     sendHTML(res, null);
   }
 }
@@ -228,7 +228,7 @@ var gotFile = function (wres, src, fname, err, data) {
 
 var gotRage = function(wres, src, err, data, info) {
   var res = wres.res;
-  var sendImage = wres.sendImage;
+  var expects = wres.expects;
   var path = imagePath(src, '');
   if (err) {
     if (err.statuscode) {
@@ -261,12 +261,12 @@ var gotRage = function(wres, src, err, data, info) {
   var wresps = inFlight[src].push(wres);
   for (var ri in wresps) {
     var res = wresps[ri].res;
-    var sendImage = wresps[ri].sendImage;
+    var expects = wresps[ri].expects;
     if (!data) {
       sendNoFaces(res);
-    } else if (sendImage) {
+    } else if (expects === 'image') {
       sendImg(res, 'png', data);
-    } else {
+    } else if (true || expects === 'text') {
       sendHTML(res, null);
     }
   }
