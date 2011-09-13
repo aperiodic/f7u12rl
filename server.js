@@ -300,7 +300,9 @@ var removeCachedFile = function (fname) {
 
 /*** MAIN (INITIALIZATION) ****************************************************/
 
-flags.defineString('conf', 'default.conf.json', 'Configuration file');
+flags.defineString('conf', 
+                   __dirname + '/conf/default.json', 
+                   'Configuration file');
 flags.parse();
 var confPath = flags.get('conf');
 var confText = fs.readFileSync(confPath, 'utf8');

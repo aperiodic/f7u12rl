@@ -8,7 +8,7 @@ cd `dirname $0`
 
 # launch the server backgrounded
 printf "launching server..."
-../server.js --conf ../default.conf.json &
+../server.js --conf ../conf/default.json &
 sleep 1
 printf "OK\n"
 
