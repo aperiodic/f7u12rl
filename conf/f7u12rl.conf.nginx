@@ -1,0 +1,46 @@
+upstream frontend { 
+  # port is 0xf712 as decimal
+  server 127.0.0.1:63250;
+}
+
+upstream backend {
+  # port is 0xf7 and 0x12 each as decimal, concatenated
+  server 127.0.0.1:24718;
+}
+
+server {
+  listen 0.0.0.0:80;
+  server_name f7u12rl.loc;
+  access_log /var/log/nginx/f7u12rl.log;
+  
+  location / {
+    # default case; anything not matching other locations will use this
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
+    proxy_set_header Hhost $http_host;
+    proxy_set_header X-NginX-Proxy true;
+    
+    proxy_pass http://frontend;
+  }
+  
+  location /image/ {
+    # looks like it's an image request, pass it on to the backend
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
+    proxy_set_header Hhost $http_host;
+    proxy_set_header X-NginX-Proxy true;
+    
+    proxy_pass http://backend;
+  }
+  
+  location /status/ {
+    # status checks are entwined with image requests (due to the in-flight 
+    # request tracking), so they go to the image server as well
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-for $proxy_add_x_forwarded_for;
+    proxy_set_header Hhost $http_host;
+    proxy_set_header X-NginX-Proxy true;
+    
+    proxy_pass http://backend;
+  }
+}
