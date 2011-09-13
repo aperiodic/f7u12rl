@@ -152,25 +152,29 @@ app.get('/status/', function (req, res) {
   fs.readFile(fname, curry([wres, src, fname], gotFile));
 })
 
-
-app.get('/:b64?', function (req, res) {
+app.get('/image/', function (req, res) {
   var request = url.parse(req.url, true);
   var src = request.query.src;
-  
-  if (!src) {
-    if (req.params.b64) {
-      var imgUrl = (new Buffer(req.params.b64, 'base64')).toString('utf8');
-    }
-    var index = renderIndex({image: imgUrl || QUEEN_ELIZABETH });
-    sendHTML(res, null, index);
-    return;
-  }
-  
+  if (!src) { sendErr(res, 400, 'No "src" param found'); return }
+    
   winston.info('enraging URL "' + src + '"');
   Stats.hit(src, req);
   var fname = imagePath(src);
   var wres = {res: res, expects: 'image'};
   fs.readFile(fname, curry([wres, src, fname], gotFile));
+})
+
+
+app.get('/:b64?', function (req, res) {
+  var request = url.parse(req.url, true);
+  var src = request.query.src;
+  
+  if (req.params.b64) {
+    var imgUrl = (new Buffer(req.params.b64, 'base64')).toString('utf8');
+  }
+  var index = renderIndex({image: imgUrl || QUEEN_ELIZABETH });
+  sendHTML(res, null, index);
+  return;
 })
 
 
@@ -258,7 +262,8 @@ var gotRage = function(wres, src, err, data, info) {
     return;
   }
   
-  var wresps = inFlight[src].push(wres);
+  inFlight[src].push(wres);
+  var wresps = inFlight[src];
   for (var ri in wresps) {
     var res = wresps[ri].res;
     var expects = wresps[ri].expects;
@@ -326,7 +331,7 @@ if (conf.log.path !== "STDOUT") {
                                        , handleExceptions: true
                                        , level:            conf.log.level
                                        })
-  winston.remove(winston.transports.Console);
+  //winston.remove(winston.transports.Console);
 }
 
 app.listen(conf.server.port);

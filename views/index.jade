@@ -52,10 +52,7 @@ html
       /* Stolen from the curry module by Dominic Tarr
        * https://github.com/dominictarrr
        */
-      function curry(){var c,a,d,e;for(key in arguments){var b=arguments[key];
-      !a&&Array.isArray(b)?d?a=b:c=b:!d&&typeof b==="function"?d=b:e=b}
-      return function(){return d.apply(e,append([].concat(c||[]),arguments)
-      .concat(a||[]))}}function append(c,a){for(i in a)c.push(a[i]);return c};
+      function curry(){var c,a,b,d,e;for(key in arguments){b=arguments[key];!a&&Array.isArray(b)?d?a=b:c=b:!d&&typeof b==="function"?d=b:e=b}return function(){return d.apply(e,append([].concat(c||[]),arguments).concat(a||[]))}}function append(c,a){for(i in a)c.push(a[i]);return c};
     script
       /* Modernizr 2.0.6 (Custom Build) | MIT & BSD
        * http://www.modernizr.com/
@@ -118,7 +115,7 @@ html
       var loadingTickTID;
 
       var swapImage = function (imgUrl, sequence) {
-        $('#img').attr('src', '/?src=' + imgUrl);
+        $('#img').attr('src', '/image/?src=' + imgUrl);
         $('#srcInput').attr('placeholder', imgUrl);
         $('#srcLink a').attr('href', imgUrl);
         sequence.imageSwapped = true;
@@ -182,7 +179,7 @@ html
       
   body
     #image
-      img#img(src='/?src=#{image}')
+      img#img(src='/image/?src=#{image}')
       #link
         #redditLink
           a(href="http://www.reddit.com/submit", onclick="window.location = 'http://www.reddit.com/submit?url=' + encodeURIComponent(window.location); return false") 
