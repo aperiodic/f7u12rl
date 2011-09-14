@@ -46,6 +46,11 @@ var RAGE_ERR_REGEX = /(^\d{2,3})\|([^\|]*)\|(\d+)$/;
 
 var IMAGES_DIR = 'resources/images';
 
+// these are all in seconds
+var ONE_DAY = 24 * 60 * 60;
+var ONE_WEEK = ONE_DAY * 7;
+var ONE_YEAR = ONE_DAY * 365;
+
 
 /*** GLOBALS ******************************************************************/
 
@@ -70,10 +75,17 @@ var cryMeARiver = function (err) {
   winston.error(err.stack);
 }
 
+var inTheFuture = function (interval) {
+  var now = new Date();
+  var then = new Date(now.getTime() + interval * 1000);
+  return then.toGMTString();
+}
 
 var sendImg = function (res, type, imageData) {
-  res.writeHead(200, { 'Content-Type': 'image/' + type
+  res.writeHead(200, { 'Cache-Control': 'max-age=' + ONE_DAY + ', public'
+                     , 'Content-Type': 'image/' + type
                      , 'Content-Length': imageData.length
+                     , 'Expires': inTheFuture(ONE_DAY)
                      });
   res.write(imageData);
   res.end();
@@ -88,8 +100,10 @@ var sendHTML = function (res, err, html) {
   
   // make a buffer so we know the byte length
   var htmlData = html ? new Buffer(html, 'utf8') : {length: 0};
-  res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8'
+  res.writeHead(200, { 'Cache-Control': 'max-age=' + ONE_WEEK
+                     , 'Content-Type': 'text/html;charset=utf-8'
                      , 'Content-Length': htmlData.length
+                     , 'Expires': inTheFuture(ONE_WEEK)
                      });
   if (html) {
     res.write(htmlData);
@@ -98,8 +112,10 @@ var sendHTML = function (res, err, html) {
 }
 
 var sendNoFaces = function(res) {
-  res.writeHead(200, { 'Content-Type': 'text/plain'
+  res.writeHead(200, { 'Cache-Control': 'max-age=' + ONE_YEAR
+                     , 'Content-Type': 'text/html;charset=utf-8'
                      , 'Content-Length': NO_FACES_MSG.length
+                     , 'Expires': inTheFuture(ONE_YEAR)
                      });
   res.write(NO_FACES_MSG);
   res.end();

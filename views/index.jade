@@ -49,13 +49,14 @@ html
 
     script(src='http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js')
     script
-      /* Stolen from the curry module by Dominic Tarr
+      /* Stolen from the curry module by Dominic Tarr, with minor modifications.
        * https://github.com/dominictarrr
        */
-      function curry(){var c,a,d,e;for(key in arguments){var b=arguments[key];
-      !a&&Array.isArray(b)?d?a=b:c=b:!d&&typeof b==="function"?d=b:e=b}
-      return function(){return d.apply(e,append([].concat(c||[]),arguments)
-      .concat(a||[]))}}function append(c,a){for(i in a)c.push(a[i]);return c};
+      function curry(){for(var c,d,a,e,f=0;f<arguments.length;f++){var b=
+      arguments[f];!d&&Array.isArray(b)?a?d=b:c=b:!a&&typeof b==="function"?a=b:
+      e=b}return function(){return a.apply(e,append([].concat(c||[]),arguments)
+      .concat(d||[]))}}function append(c,d){for(var a=0;a<arguments.length;a++)c
+      .push(d[a]);return c};
     script
       /* Modernizr 2.0.6 (Custom Build) | MIT & BSD
        * http://www.modernizr.com/
