@@ -51,6 +51,10 @@ var ONE_DAY = 24 * 60 * 60;
 var ONE_WEEK = ONE_DAY * 7;
 var ONE_YEAR = ONE_DAY * 365;
 
+// when there's a change in how images are drawn, this field should be updated.
+// used in image caching headers
+var IMAGE_DRAWING_LAST_CHANGE = enrage.lastModificationDate;
+
 
 /*** GLOBALS ******************************************************************/
 
@@ -81,11 +85,23 @@ var inTheFuture = function (interval) {
   return then.toGMTString();
 }
 
-var sendImg = function (res, type, imageData) {
+var sendImg = function (req, res, type, imageData) {
+  if (req && req.headers['if-modified-since']) {
+    var lastSaw = new Date(req.headers['if-modified-since']);
+    if (lastSaw >= IMAGE_DRAWING_LAST_CHANGE || lastSaw > new Date()) {
+      res.writeHead(304 , { 'Content-Type': 'image/' + type
+                          , 'Expires': inTheFuture(ONE_DAY)
+                          });
+      res.end();
+      return;
+    }
+  }
+  
   res.writeHead(200, { 'Cache-Control': 'max-age=' + ONE_DAY + ', public'
                      , 'Content-Type': 'image/' + type
                      , 'Content-Length': imageData.length
                      , 'Expires': inTheFuture(ONE_DAY)
+                     , 'Last-Modified': IMAGE_DRAWING_LAST_CHANGE.toGMTString()
                      });
   res.write(imageData);
   res.end();
@@ -100,10 +116,8 @@ var sendHTML = function (res, err, html) {
   
   // make a buffer so we know the byte length
   var htmlData = html ? new Buffer(html, 'utf8') : {length: 0};
-  res.writeHead(200, { 'Cache-Control': 'max-age=' + ONE_WEEK
-                     , 'Content-Type': 'text/html;charset=utf-8'
+  res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8'
                      , 'Content-Length': htmlData.length
-                     , 'Expires': inTheFuture(ONE_WEEK)
                      });
   if (html) {
     res.write(htmlData);
@@ -165,7 +179,7 @@ app.get('/status/', function (req, res) {
   
   var fname = imagePath(src);
   var wres = {res: res, expects: 'text'};
-  fs.readFile(fname, curry([wres, src, fname], gotFile));
+  fs.readFile(fname, curry([req, wres, src, fname], gotFile));
 })
 
 app.get('/image/', function (req, res) {
@@ -177,7 +191,7 @@ app.get('/image/', function (req, res) {
   Stats.hit(src, req);
   var fname = imagePath(src);
   var wres = {res: res, expects: 'image'};
-  fs.readFile(fname, curry([wres, src, fname], gotFile));
+  fs.readFile(fname, curry([req, wres, src, fname], gotFile));
 })
 
 
@@ -194,7 +208,7 @@ app.get('/:b64?', function (req, res) {
 })
 
 
-var gotFile = function (wres, src, fname, err, data) {
+var gotFile = function (req, wres, src, fname, err, data) {
   var res = wres.res;
   var expects = wres.expects;
   
@@ -239,7 +253,7 @@ var gotFile = function (wres, src, fname, err, data) {
   }
   
   if (expects === 'image') {
-    sendImg(res, 'jpeg', data);
+    sendImg(req, res, 'jpeg', data);
   } else if (true || expects === 'text') {
     sendHTML(res, null);
   }
@@ -286,7 +300,7 @@ var gotRage = function(wres, src, err, data, info) {
     if (!data) {
       sendNoFaces(res);
     } else if (expects === 'image') {
-      sendImg(res, 'png', data);
+      sendImg(null, res, 'png', data);
     } else if (true || expects === 'text') {
       sendHTML(res, null);
     }
@@ -303,15 +317,17 @@ var gotRage = function(wres, src, err, data, info) {
 
 
 var convertToJPEG = function (src, path, err) {
-  gm(path + '.png').write(path + '.jpg', curry([path], removePNG));
+  gm(path + '.png').write(path + '.prg.jpg', curry([path], conversionComplete));
 }
 
-var removePNG = function (path, err) {
+var conversionComplete = function (path, err) {
   if (err) {
     removeCachedFile(path + '.jpg');
-  } else {
-    fs.unlink(path + '.png', reportIfErr);
-  }
+    return;
+  } 
+  
+  fs.rename(path + '.prg.jpg', path + '.jpg', reportIfErr);
+  fs.unlink(path + '.png', reportIfErr);
 }
 
 var removeCachedFile = function (fname) {
