@@ -188,6 +188,10 @@ app.get('/image/', function (req, res) {
   fs.readFile(fname, curry([req, wres, src, fname], gotFile));
 })
 
+app.get('/favicon.png', function (req, res) {
+ var wres = {res: res, expects: 'image'};
+ fs.readFile('resources/favicon.png', curry([req, wres, null, null], gotFile));
+})
 
 app.get('/:b64?', function (req, res) {
   var request = url.parse(req.url, true);

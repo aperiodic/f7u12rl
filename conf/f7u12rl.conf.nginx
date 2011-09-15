@@ -25,6 +25,14 @@ server {
     gzip_proxied any;
   }
   
+  location = /favicon.png {
+    # this is just to serve the favicon without hitting node
+    # if the location of your f7u12rl repo is '/home/biffturckle/f7u12rl', then
+    # set root to '/home/biffturckly/f7u12rl/resources'
+    root /path/to/f7u12rl/resources;
+  }
+    
+  
   location /image/ {
     # looks like it's an image request, pass it on to the backend
     proxy_set_header X-Real-IP $remote_addr;
