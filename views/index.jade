@@ -142,26 +142,36 @@ html
       var newImageSequence = function () {
         return {callback: revealImage};
       }
+
+      var onPop = function (e) {
+        if (document.location.pathname.length > 1) {
+          var imgUrl = window.atob(document.location.pathname.replace('/',
+                                                                      ''));
+          startSwap(imgUrl); 
+        } else {
+          if (window.history.length > 1) {
+            var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
+                         'images2/QR/queenelizabethii.jpg';
+            if ($('#img').attr('src') !== '/?src=' + imgUrl) {
+              startSwap(imgUrl);
+            }
+          } else {
+            $('#image').slideDown();
+          }
+        }
+      }
       
       $(document).ready(function () {
-        $('#image').hide();
         if (Modernizr.history) {
+          $('#image').hide();
+          
           // setup history pop listener to restore previous photo
-          window.addEventListener('popstate', function (e) {
-            if (document.location.pathname.length > 1) {
-              var imgUrl = window.atob(document.location.pathname.replace('/',
-                                                                          ''));
-              startSwap(imgUrl); 
-            } else {
-              if (window.history.length > 1) {
-                var imgUrl = 'http://www.librarising.com/astrology/celebs/' +
-                             'images2/QR/queenelizabethii.jpg';
-                if ($('#img').attr('src') !== '/?src=' + imgUrl) {
-                  startSwap(imgUrl);
-                }
-              }
-            }
-          })
+          window.addEventListener('popstate', onPop);
+          var ua = navigator.userAgent;
+          if (!ua.match('Chrome') && 
+              (!ua.match('Safari') || ua.match('Mobile'))) {
+            onPop();
+          }
         }
       
         $('form').submit(function (e) {
@@ -195,7 +205,7 @@ html
     #wrapper
       #msgs
       #label FFFFFFFUUUUUUUUUUURL:
-      form(action='/')
+      form(action='/image/')
         input#srcInput(type='text', name='src', size=60, placeholder=image)
         input#enrage(type='submit', value='&nbsp;ENRAGE&nbsp;')
       #footer
