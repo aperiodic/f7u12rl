@@ -143,7 +143,9 @@ html
         return {callback: revealImage};
       }
 
-      var onPop = function (e) {
+      var didPop = false;
+      var onPop = function () {
+        didPop = true;
         if (document.location.pathname.length > 1) {
           var imgUrl = window.atob(document.location.pathname.replace('/',
                                                                       ''));
@@ -167,11 +169,10 @@ html
           
           // setup history pop listener to restore previous photo
           window.addEventListener('popstate', onPop);
-          var ua = navigator.userAgent;
-          if (!ua.match('Chrome') && 
-              (!ua.match('Safari') || ua.match('Mobile'))) {
-            onPop();
-          }
+          // !!! HACK ALERT !!!
+          // work around differences in HTML5 history API implementations by
+          // manually firing an initial onpopstate event, if necessary
+          setTimeout(function() { if (!didPop) onPop() }, 100);
         }
       
         $('form').submit(function (e) {
@@ -181,7 +182,7 @@ html
             //$('#img').attr('src', '/?src=' + imgUrl);
             swapImage(imgUrl, sequence);
             if (Modernizr.history) {
-              history.pushState({haveMoved: true}, 
+              history.pushState(null,
                                 '', 
                                 '/' + window.btoa(imgUrl));
             }
