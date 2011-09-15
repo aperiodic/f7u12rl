@@ -1,7 +1,6 @@
 { "face_com": { "api_key":    "Your face.com API key"
               , "api_secret": "Your face.com API secret"
               }
-              }
              
 , "log": { "level": "info"
          , "path": "/var/log/f7u12rl.backend.log"
@@ -9,9 +8,5 @@
  
 , "server": { "port":     24718
             , "hostname": "0.0.0.0"
-            }
-            
-, "redis":  { "host": "localhost"
-            , "port": 6379
             }
 }

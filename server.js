@@ -13,11 +13,9 @@ var express = require('express');
 var flags = require('flags');
 var gm = require('gm');
 var jade = require('jade');
-var redis = require('redis');
 var winston = require('winston');
 
 var enrage = require(__dirname + '/lib/enrage.js');
-var Stats = require(__dirname + '/lib/stats.js');
 
 
 /*** RUNTIME #DEFINES *********************************************************/
@@ -57,9 +55,6 @@ var IMAGE_DRAWING_LAST_CHANGE = enrage.lastModificationDate;
 
 
 /*** GLOBALS ******************************************************************/
-
-// redis client
-var rc;
 
 // express.js app object
 var app = express.createServer();
@@ -188,7 +183,6 @@ app.get('/image/', function (req, res) {
   if (!src) { sendErr(res, 400, 'No "src" param found'); return }
     
   winston.info('enraging URL "' + src + '"');
-  Stats.hit(src, req);
   var fname = imagePath(src);
   var wres = {res: res, expects: 'image'};
   fs.readFile(fname, curry([req, wres, src, fname], gotFile));
@@ -354,8 +348,6 @@ try {
 var indexTemplate = fs.readFileSync(__dirname + '/views/index.jade');
 renderIndex = jade.compile(indexTemplate, {});
 
-rc = redis.createClient(conf.redis.port, conf.redis.host);
-Stats.configure(rc);
 enrage.configure(conf.face_com.api_key, conf.face_com.api_secret);
 
 if (conf.log.path !== "STDOUT") {

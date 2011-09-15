@@ -6,11 +6,7 @@
          , "path": "/var/log/f7u12rl.frontend.log"
          }
  
-, "server": { "port":     63520
+, "server": { "port":     63250
             , "hostname": "0.0.0.0"
-            }
-            
-, "redis":  { "host": "localhost"
-            , "port": 6379
             }
 }
