@@ -156,7 +156,7 @@ var reportIfErr = function (err) {
 var imagePath = function (src, extension) {
   var b64 = (new Buffer(src)).toString('base64');
   if (extension === undefined) extension = '.jpg';
-  return IMAGES_DIR + '/' + b64 + extension;
+  return __dirname + '/' + IMAGES_DIR + '/' + b64 + extension;
 }
 
 
@@ -340,6 +340,7 @@ var switchToOwner = function (err, stats) {
     cryMeARiver(err);
     return;
   }
+  process.setgid(stats.gid);
   process.setuid(stats.uid);
 }
 
