@@ -1,8 +1,3 @@
-f7u12rl
-=======
-
-![fffffffuuuuuuuuuuuu](resources/qe.jpg "Her Royal Majesty")
-
 Installation
 ------------
 
