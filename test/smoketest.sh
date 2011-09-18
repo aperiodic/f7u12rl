@@ -16,15 +16,16 @@ printf "OK\n"
 # wget it (it's using the default conf, so it'll be on port 24712 (note 247 is
 # the decimal value of the hex 0xf7, 'u' is elided as it's not a hex 
 # character, and 18 is the decimal value of 0x12.
-echo "Retrieving index..."
+echo "Retrieving index and test image..."
 wget localhost:24718
-WGET_STATUS=$?
+INDEX_STATUS=$?
+wget localhost:24718/?src=http://www.librarising.com/astrology/celebs/images2/QR/queenelizabethii.jpg
+IMG_STATUS=$?
 
 kill %1 &>/dev/null
 rm index.html*
 
-if (( WGET_STATUS == 0 )); then
-  echo "Index retrieved!"
+if (( WGET_STATUS == 0 && INDEX_STATUS == 0 )); then
   echo ""
   echo "test passed!"
 else
