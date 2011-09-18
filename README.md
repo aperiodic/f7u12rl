@@ -1,24 +1,29 @@
+f7u12rl
+=======
+
+Check out [the live demo](http://f7u12rl.com).
+
 Installation
 ------------
 
-If you have npm, then just run `npm install f7u12rl`.
+`npm install f7u12rl`.
 
 You can also clone the git repo with 
-`git clone git@github.com/aperiodic/f7u12rl.git`.
+`git clone git@github.com:aperiodic/f7u12rl.git`, but you'll need to install the
+dependencies with `npm install` in the repo root.
 
 
 Usage
 -----
 
-Run the smoke test with `npm test` or `./test/smoketest.sh`.
+Copy your face.com API key and secret into the default.conf.json file, then run
+the smoke test with `npm test` or `./test/smoketest.sh`.
 
 If it fails, please open a github issue about it and gist the output of the test
 script.
 
-If it passes, then copy your face.com API key and secret into the
-default.conf.json file, and start the server with `./server.js`.
-Now you can navigate to localhost:24718 in your browser, and you'll be looking
-at your local copy of f7u12rl!
+If it passes, then navigate to localhost:24718 in your browser, and you'll be 
+looking at your local copy of f7u12rl!
 
 
 Roadmap

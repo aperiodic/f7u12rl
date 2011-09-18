@@ -3,6 +3,10 @@
 , "keywords" :     ["face", "recognition", "rage", "reddit"]
 , "version" :      "0.1.0"
 , "author" :       "Dan Lidral-Porter <dlp@aperiodic.org>"
+, "homepage" :     "http://f7u12rl.com"
+, "repository":    { "type" : "git"
+                   , "url" : "http://github.com/aperiodic/f7u12rl.git"
+                   }
 , "engines" :      { "node" : ">= 0.4.10" }
 , "directories" :  { "lib" : "./lib"}
 , "bin" :          { "f7u12rl" : "./server.js" }
