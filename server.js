@@ -333,7 +333,15 @@ var removeCachedFile = function (fname) {
 }
 
 
-/*** MAIN (INITIALIZATION) ****************************************************/
+/*** MAIN & INITIALIZATION ****************************************************/
+
+var switchToOwner = function (err, stats) {
+  if (err) {
+    cryMeARiver(err);
+    return;
+  }
+  process.setuid(stats.uid);
+}
 
 flags.defineString('conf', 
                    __dirname + '/conf/default.json', 
@@ -359,7 +367,11 @@ if (conf.log.path !== "STDOUT") {
                                        , handleExceptions: true
                                        , level:            conf.log.level
                                        })
-  //winston.remove(winston.transports.Console);
+  winston.remove(winston.transports.Console);
 }
 
-app.listen(conf.server.port);
+app.listen(conf.server.port, function() {
+  if (process.getuid() === 0) {
+    fs.stat(__filename, switchToOwner);
+  }
+})
