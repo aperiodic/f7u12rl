@@ -171,9 +171,12 @@ html
           // setup history pop listener to restore previous photo
           window.addEventListener('popstate', onPop);
           // !!! HACK ALERT !!!
-          // work around differences in HTML5 history API implementations by
-          // manually firing an initial onpopstate event, if necessary
-          setTimeout(function() { if (!didPop) onPop() }, 100);
+          // work around differences in HTML5 history API implementations 
+          var ua = navigator.userAgent;
+          if (!ua.match('Chrome') && 
+             (!ua.match('Safari') || ua.match('Mobile'))) {
+            onPop();
+          }
         }
       
         $('form').submit(function (e) {
