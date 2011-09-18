@@ -1,7 +1,7 @@
 f7u12rl
 =======
 
-![fffffffuuuuuuuuuuuu](resources/qe.jpg "Her Royal Majesty")
+![fffffffuuuuuuuuuuuu](http://f7u12rl.com/image/?src=http://f7u12rl.com/image/?src=http://www.librarising.com/astrology/celebs/images2/QR/queenelizabethii.jpg "Her Royal Majesty")
 
 Installation
 ------------
