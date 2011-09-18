@@ -180,7 +180,6 @@ html
           var imgUrl = $('#srcInput').val();
           var sequence = newImageSequence();
           $('#image').slideUp(200, function() {
-            //$('#img').attr('src', '/?src=' + imgUrl);
             swapImage(imgUrl, sequence);
             if (Modernizr.history) {
               history.pushState(null,
