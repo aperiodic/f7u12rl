@@ -1,8 +1,7 @@
 f7u12rl
 =======
 
-< put image of rage queen elizabeth here >
-
+![fffffffuuuuuuuuuuuu](resources/qe.jpg "Her Royal Majesty")
 
 Installation
 ------------
