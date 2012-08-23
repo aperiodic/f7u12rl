@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/aperiodic/f7u12rl.png)](http://travis-ci.org/aperiodic/f7u12rl)
 f7u12rl
 =======
 
